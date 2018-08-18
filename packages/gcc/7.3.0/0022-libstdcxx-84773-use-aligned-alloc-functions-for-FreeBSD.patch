@@ -1,0 +1,160 @@
+From 147fd74e3938aa0af0e257ab9766d8b5dc159121 Mon Sep 17 00:00:00 2001
+From: redi <redi@138bc75d-0d04-0410-961f-82ee72b054a4>
+Date: Mon, 12 Mar 2018 22:52:16 +0000
+Subject: [PATCH] PR libstdc++/84773 use aligned alloc functions for FreeBSD
+ and MinGW cross-compilers
+
+	PR libstdc++/84773
+	PR libstdc++/83662
+	* crossconfig.m4: Check for aligned_alloc etc. on freebsd and mingw32.
+	* configure: Regenerate.
+	* include/c_global/cstdlib [_GLIBCXX_HAVE_ALIGNED_ALLOC]
+	(aligned_alloc): Add using-declaration.
+	* testsuite/18_support/aligned_alloc/aligned_alloc.cc: New test.
+
+git-svn-id: svn+ssh://gcc.gnu.org/svn/gcc/trunk@258468 138bc75d-0d04-0410-961f-82ee72b054a4
+---
+ libstdc++-v3/ChangeLog                        | 10 +++++
+ libstdc++-v3/configure                        | 26 ++++++++++++
+ libstdc++-v3/crossconfig.m4                   |  2 +
+ libstdc++-v3/include/c_global/cstdlib         |  6 +++
+ .../18_support/aligned_alloc/aligned_alloc.cc | 42 +++++++++++++++++++
+ 5 files changed, 86 insertions(+)
+ create mode 100644 libstdc++-v3/testsuite/18_support/aligned_alloc/aligned_alloc.cc
+
+diff --git a/libstdc++-v3/configure b/libstdc++-v3/configure
+index 54dd7cef4e17..ad6c506c6065 100755
+--- a/libstdc++-v3/configure
++++ b/libstdc++-v3/configure
+@@ -53347,6 +53347,19 @@ if test "x$ac_cv_func___cxa_thread_atexit" = x""yes; then :
+ #define HAVE___CXA_THREAD_ATEXIT 1
+ _ACEOF
+ 
++fi
++done
++
++    for ac_func in aligned_alloc posix_memalign memalign _aligned_malloc
++do :
++  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
++ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
++eval as_val=\$$as_ac_var
++   if test "x$as_val" = x""yes; then :
++  cat >>confdefs.h <<_ACEOF
++#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
++_ACEOF
++
+ fi
+ done
+ 
+@@ -66100,6 +66113,19 @@ done
+ 
+   CXXFLAGS="$ac_save_CXXFLAGS"
+ 
++    for ac_func in aligned_alloc posix_memalign memalign _aligned_malloc
++do :
++  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
++ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
++eval as_val=\$$as_ac_var
++   if test "x$as_val" = x""yes; then :
++  cat >>confdefs.h <<_ACEOF
++#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
++_ACEOF
++
++fi
++done
++
+     ;;
+   *-netbsd*)
+     SECTION_FLAGS='-ffunction-sections -fdata-sections'
+diff --git a/libstdc++-v3/crossconfig.m4 b/libstdc++-v3/crossconfig.m4
+index a8b1da9a6071..fa56795b25ef 100644
+--- a/libstdc++-v3/crossconfig.m4
++++ b/libstdc++-v3/crossconfig.m4
+@@ -133,6 +133,7 @@ case "${host}" in
+       AC_DEFINE(HAVE_ISNANL)
+     fi
+     AC_CHECK_FUNCS(__cxa_thread_atexit)
++    AC_CHECK_FUNCS(aligned_alloc posix_memalign memalign _aligned_malloc)
+     ;;
+ 
+   *-fuchsia*)
+@@ -197,6 +198,7 @@ case "${host}" in
+     GLIBCXX_CHECK_LINKER_FEATURES
+     GLIBCXX_CHECK_MATH_SUPPORT
+     GLIBCXX_CHECK_STDLIB_SUPPORT
++    AC_CHECK_FUNCS(aligned_alloc posix_memalign memalign _aligned_malloc)
+     ;;
+   *-netbsd*)
+     SECTION_FLAGS='-ffunction-sections -fdata-sections'
+diff --git a/libstdc++-v3/include/c_global/cstdlib b/libstdc++-v3/include/c_global/cstdlib
+index a3b19f30b336..10335017f0c4 100644
+--- a/libstdc++-v3/include/c_global/cstdlib
++++ b/libstdc++-v3/include/c_global/cstdlib
+@@ -78,6 +78,9 @@ namespace std
+ 
+ // Get rid of those macros defined in <stdlib.h> in lieu of real functions.
+ #undef abort
++#if __cplusplus >= 201703L && defined(_GLIBCXX_HAVE_ALIGNED_ALLOC)
++# undef aligned_alloc
++#endif
+ #undef atexit
+ #if __cplusplus >= 201103L
+ # ifdef _GLIBCXX_HAVE_AT_QUICK_EXIT
+@@ -125,6 +128,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+   using ::ldiv_t;
+ 
+   using ::abort;
++#if __cplusplus >= 201703L && defined(_GLIBCXX_HAVE_ALIGNED_ALLOC)
++  using ::aligned_alloc;
++#endif
+   using ::atexit;
+ #if __cplusplus >= 201103L
+ # ifdef _GLIBCXX_HAVE_AT_QUICK_EXIT
+diff --git a/libstdc++-v3/testsuite/18_support/aligned_alloc/aligned_alloc.cc b/libstdc++-v3/testsuite/18_support/aligned_alloc/aligned_alloc.cc
+new file mode 100644
+index 000000000000..8af9c723ad17
+--- /dev/null
++++ b/libstdc++-v3/testsuite/18_support/aligned_alloc/aligned_alloc.cc
+@@ -0,0 +1,42 @@
++// Copyright (C) 2018 Free Software Foundation, Inc.
++//
++// This file is part of the GNU ISO C++ Library.  This library is free
++// software; you can redistribute it and/or modify it under the
++// terms of the GNU General Public License as published by the
++// Free Software Foundation; either version 3, or (at your option)
++// any later version.
++
++// This library is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++
++// You should have received a copy of the GNU General Public License along
++// with this library; see the file COPYING3.  If not see
++// <http://www.gnu.org/licenses/>.
++
++// { dg-options "-std=gnu++17" }
++// { dg-do run { target c++17 } }
++
++#include <cstdlib>
++#include <cstdint>
++#include <testsuite_hooks.h>
++
++void
++test01()
++{
++#ifdef _GLIBCXX_HAVE_ALIGNED_ALLOC
++  void* p = std::aligned_alloc(256, 1);
++  if (p)
++  {
++    VERIFY( (reinterpret_cast<std::uintptr_t>(p) % 256) == 0 );
++    std::free(p);
++  }
++#endif
++}
++
++int
++main()
++{
++  test01();
++}
