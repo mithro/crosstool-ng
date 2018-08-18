@@ -4,18 +4,20 @@ Date: Mon, 11 Jun 2018 19:57:24 +0000
 Subject: [PATCH] Implement aligned_alloc using posix_memaligned
 
 ---
- stdlib/stdlib.h | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ stdlib/stdlib.h | 14 +++++++++++
+ 1 file changed, 14 insertions(+)
 
 diff --git a/stdlib/stdlib.h b/stdlib/stdlib.h
 index d1f3841f1b..051495db85 100644
 --- a/stdlib/stdlib.h
 +++ b/stdlib/stdlib.h
-@@ -507,6 +507,19 @@
+@@ -507,6 +507,20 @@
  /* Allocate memory of SIZE bytes with an alignment of ALIGNMENT.  */
  extern int posix_memalign (void **__memptr, size_t __alignment, size_t __size)
       __THROW __nonnull ((1)) __wur;
-+#if !defined(_GLIBCXX_SHARED)
++#if defined __cplusplus
++extern "C" { static inline void* aligned_alloc (size_t al, size_t sz); }
++#endif
 +static inline void* aligned_alloc (size_t al, size_t sz)
 +{
 +  void *ptr = NULL;
@@ -27,7 +29,6 @@ index d1f3841f1b..051495db85 100644
 +    return ptr;
 +  return NULL;
 +}
-+#endif
  #endif
  
  __BEGIN_NAMESPACE_STD
