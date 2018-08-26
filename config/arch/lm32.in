@@ -1,8 +1,6 @@
 # LatticeMico32 specific config options
 
 ## no-package
-## depends on EXPERIMENTAL
-##
 ## select ARCH_SUPPORTS_32
 ## select ARCH_DEFAULT_32
 ## select ARCH_SUPPORTS_WITH_ABI
