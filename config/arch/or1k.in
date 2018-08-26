@@ -1,0 +1,9 @@
+# OpenRISC 1000 (or1k) specific config options
+
+## no-package
+## select ARCH_SUPPORTS_32
+## select ARCH_DEFAULT_32
+## select ARCH_SUPPORTS_WITH_ABI
+## select ARCH_SUPPORTS_WITH_ARCH
+
+## help The OpenRISC 1000 architecture.
